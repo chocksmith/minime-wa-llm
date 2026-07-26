@@ -147,12 +147,12 @@ class MessageHandler(BaseHandler):
             await self.upsert(opt_out)
             await self.send_message(
                 message.chat_jid,
-                "You have been opted out. You will no longer be tagged in summaries and answers.",
+                "Você optou por sair. Você não será mais marcado em resumos e respostas.",
             )
         else:
             await self.send_message(
                 message.chat_jid,
-                "You are already opted out.",
+                "Você já está fora (opt-out).",
             )
 
     async def handle_opt_in(self, message: Message):
@@ -162,18 +162,18 @@ class MessageHandler(BaseHandler):
             await self.session.commit()
             await self.send_message(
                 message.chat_jid,
-                "You have been opted in. You will now be tagged in summaries and answers.",
+                "Você optou por participar. Você voltará a ser marcado em resumos e respostas.",
             )
         else:
             await self.send_message(
                 message.chat_jid,
-                "You are already opted in.",
+                "Você já está participando (opt-in).",
             )
 
     async def handle_opt_status(self, message: Message):
         opt_out = await self.session.get(OptOut, message.sender_jid)
-        status = "opted out" if opt_out else "opted in"
+        status = "fora (opt-out)" if opt_out else "participando (opt-in)"
         await self.send_message(
             message.chat_jid,
-            f"You are currently {status}.",
+            f"Você está atualmente {status}.",
         )

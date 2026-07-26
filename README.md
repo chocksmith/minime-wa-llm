@@ -1,10 +1,12 @@
 # 📱 WhatsApp Group Summary Bot
 
-![release version](https://img.shields.io/github/v/release/ilanbenb/wa_llm)
-![Build Image](https://github.com/ilanbenb/wa_llm/actions/workflows/docker.yml/badge.svg)
-![Release](https://github.com/ilanbenb/wa_llm/actions/workflows/release.yml/badge.svg)
+![release version](https://img.shields.io/github/v/release/chocksmith/minime-wa-llm)
+![Build Image](https://github.com/chocksmith/minime-wa-llm/actions/workflows/docker.yml/badge.svg)
+![Release](https://github.com/chocksmith/minime-wa-llm/actions/workflows/release.yml/badge.svg)
 
 AI-powered WhatsApp bot that **joins any group, tracks conversations, and generates intelligent summaries**.
+
+> **About this repo:** `minime-wa-llm` is a personal project built on top of [ilanbenb/wa_llm](https://github.com/ilanbenb/wa_llm) (kept as the `upstream` git remote here). It's customized for personal/family use rather than being a general-purpose fork meant for upstream contribution — notably a Portuguese persona, a manual knowledge-base seeding endpoint (`/kb/seed`), an optional web-search tool for the Q&A agent, and support for running alongside other independent bot services (see "Companion services" below) that share the same WhatsApp session.
 
 ---
 
@@ -46,8 +48,8 @@ This project includes multiple Docker Compose files for different environments:
 
 ### 1. Clone & Configure
 
-`git clone https://github.com/YOUR_USER/wa_llm.git
-cd wa_llm`
+`git clone https://github.com/chocksmith/minime-wa-llm.git
+cd minime-wa-llm`
 
 ### 2. Create .env file
 
@@ -125,10 +127,56 @@ Swagger docs available at: `http://localhost:8000/docs`
 
 #### Key Endpoints
 
-- <b>/load_new_kbtopic (POST)</b> Loads a new knowledge base topic, prepares content for summarization.
-- <b>/trigger_summarize_and_send_to_groups (POST)</b> Generates & dispatches summaries, Sends summaries to all managed groups
+- <b>/load_new_kbtopics (POST)</b> Distills recent chat history into knowledge-base topics for all managed groups.
+- <b>/summarize_and_send_to_groups (POST)</b> Generates & dispatches daily summaries to all managed groups (and their linked community groups).
+- <b>/kb/seed (POST)</b> Seeds a group's knowledge base with hand-written background info that didn't come from chat messages (e.g. the group's purpose, rules, reference facts). Re-seeding the same `subject` for a group overwrites that entry. Example:
+  ```bash
+  curl -X POST http://localhost:8000/kb/seed \
+    -H "Content-Type: application/json" \
+    -d '{
+      "group_name": "Your Group Name",
+      "topics": [
+        {"subject": "Purpose", "content": "What this group is about..."}
+      ]
+    }'
+  ```
 
-### 7. Opt-Out Feature
+### 7. Operations — Start / Stop / Status
+
+All commands run from the repo root (where `docker-compose.yml` lives).
+
+```bash
+# Start everything (creates volumes/networks as needed; safe to re-run)
+docker compose up -d
+
+# Check what's running
+docker compose ps
+
+# Stop everything (containers stop, all data/volumes persist)
+docker compose stop
+
+# Fully remove containers (still keeps volumes/data — use before recreating)
+docker compose down
+
+# Watch logs
+docker compose logs -f                 # everything
+docker compose logs -f web-server       # one service
+docker compose logs -f realestate-bot   # one service
+
+# After an env change (picks up the new env without rebuilding)
+docker compose up -d --no-deps <service>
+
+# After a code change (rebuild image first, then recreate)
+docker compose build <service> && docker compose up -d --no-deps <service>
+```
+
+Service names: `postgres`, `whatsapp`, `web-server`, `realestate-bot`.
+
+All four services run with `restart: always`, so a Docker/host restart brings the whole stack back automatically — no manual intervention needed. `postgres` must be healthy before `whatsapp` will start (it depends on it); if you ever see `whatsapp` crash-looping right after a fresh start, this is almost always just startup ordering catching up, and it self-resolves within seconds.
+
+**Never run** `docker compose down -v` or remove the `wa_llm_whatsapp` volume casually — that discards the paired WhatsApp session and forces re-scanning the QR code for every bot on the stack.
+
+### 8. Opt-Out Feature
 
 Users can control whether they are tagged in bot-generated messages (summaries, answers) by sending Direct Messages (DMs) to the bot:
 
@@ -205,12 +253,48 @@ The `check` command runs formatting first, then executes linting, type checking,
 
 ## Architecture
 
-The project consists of several key components:
+### Core components
 
-- FastAPI backend for webhook handling
-- WhatsApp Web API client for message interaction
-- PostgreSQL database with vector storage for knowledge base
-- AI-powered message processing and response generation
+- **`whatsapp`** — [GOWA](https://github.com/aldinokemal/go-whatsapp-web-multidevice) (`go-whatsapp-web-multidevice`), the self-hosted WhatsApp Web REST API. Owns the *one* paired WhatsApp session/phone number for the whole stack. Exposes a REST API on port `3000` (basic auth) and pushes every incoming event as a webhook.
+- **`postgres`** — Postgres + `pgvector`, storing groups, messages, and the knowledge-base topic embeddings.
+- **`web-server`** — this app. FastAPI backend (`app/main.py`) that receives WhatsApp webhooks, runs the message handler/router, and answers `@mentions` using an LLM agent (via `pydantic-ai`) backed by the Postgres knowledge base.
+
+```
+                  ┌────────────────────────┐
+                  │   whatsapp (GOWA)      │
+                  │   one WhatsApp session │
+                  │   port 3000            │
+                  └───────────┬────────────┘
+                              │ every event is POSTed to
+                              │ every URL in WHATSAPP_WEBHOOK
+                ┌─────────────┴─────────────┐
+                ▼                           ▼
+    ┌───────────────────────┐   ┌─────────────────────────────┐
+    │  web-server            │   │  (optional) other            │
+    │  port 8000              │   │  webhook consumers            │
+    │  only acts on groups    │   │  e.g. realestate-bot -         │
+    │  it marked managed=true │   │  each ignores groups it        │
+    │                         │   │  doesn't own (see below)       │
+    └────────────┬────────────┘   └─────────────────────────────┘
+                ▼
+    ┌───────────────────────┐
+    │  postgres              │
+    │  pgvector KB           │
+    └───────────────────────┘
+```
+
+GOWA's `WHATSAPP_WEBHOOK` env var accepts a **comma-separated list of URLs** — it will fan out every event to all of them. This means a single paired phone number can serve `web-server` *and* any number of other independent bot services at once, each deciding for itself which groups/messages are its business, with zero code coupling between them. `web-server`'s side of that decision is the `managed` boolean column on the `group` table (see "Activating the Bot for a Group" above) — any group that isn't `managed` is silently ignored by this app, after storing the message for its own records.
+
+### Knowledge base & agent behavior
+
+- Conversations in `managed` groups get periodically distilled into topics and embedded (`/load_new_kbtopics`), searchable via hybrid vector + keyword search.
+- `POST /kb/seed` lets you inject hand-written background knowledge for a group directly (bypassing chat-history extraction) — useful for things like a group's purpose, rules, or reference facts that didn't come from conversation.
+- The agent optionally has a live web-search tool (DuckDuckGo, no API key required) for questions the group's own knowledge can't answer.
+- Persona/response-style instructions live in `src/templates/persona.j2`, shared by the summarize and Q&A prompts.
+
+### Companion services (optional)
+
+This stack is designed so **other bot personalities can share the same WhatsApp session** without touching this app's code at all — just add another `WHATSAPP_WEBHOOK` URL and let that service filter to its own group(s). One example run alongside this deployment: a `realestate-bot` service (from a separate repository) that answers questions and posts notifications in a dedicated group, backed by its own GitHub-repo-based knowledge store and email-polling pipeline, using Claude directly rather than this app's RAG pipeline. It's wired in via `docker-compose.yml` as an additional service (`build.context` pointing at that other repo's checkout) and requires no changes to this app beyond the extra webhook URL and never marking its group `managed`. If you don't have such a service configured, ignore this section — it has no effect on the rest of the stack.
 
 ---
 

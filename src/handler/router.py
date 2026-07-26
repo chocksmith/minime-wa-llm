@@ -35,9 +35,9 @@ class Intent(BaseModel):
     intent: IntentEnum = Field(
         description="""The intent of the message.
 - summarize: Summarize TODAY's chat messages, or catch up on the chat messages FROM TODAY ONLY. This will trigger the summarization of the chat messages. This is only relevant for queries about TODDAY chat. A query across a broader timespan is classified as ask_question
-- ask_question: Ask a question or learn from the collective knowledge of the group. This will trigger the knowledge base to answer the question.
-- about: Learn about me(bot) and my capabilities. This will trigger the about section.
-- other:  something else. This will trigger the default response."""
+- ask_question: Ask a question, OR request an opinion/analysis/explanation, OR any other request (even phrased as a command, e.g. "tell the group...", "give your take on...", "explain...") that requires drawing on the collective knowledge of the group to answer. INCLUDES questions/requests about the group itself (its purpose, topic, rules, members, history, ongoing situations, etc.). This will trigger the knowledge base to answer.
+- about: ONLY when the user asks about the BOT itself as an assistant/program (e.g. "who are you", "what can you do", "are you a bot"). NEVER use this for questions or requests about the group. This will trigger the about section.
+- other: ONLY for messages that are unrelated to the group's context and don't fit any category above (e.g. small talk, greetings). When in doubt between other and ask_question, prefer ask_question. This will trigger the default response."""
     )
 
 
@@ -118,13 +118,13 @@ class Router(BaseHandler):
     async def about(self, message):
         await self.send_message(
             message.chat_jid,
-            "I'm an open-source bot created for the GenAI Israel community - https://llm.org.il.\nI can help you catch up on the chat messages and answer questions based on the group's knowledge.\nPlease send me PRs and star me at https://github.com/ilanbenb/wa_llm ⭐️",
+            "Sou o Mini-me, um bot de IA criado para ajudar a cuidar da mamãe. Posso responder perguntas sobre os cuidados, decisões tomadas no grupo e te atualizar sobre as mensagens do dia.",
             # in_reply_to=message.message_id,
         )
 
     async def default_response(self, message):
         await self.send_message(
             message.chat_jid,
-            "I'm sorry, but I dont think this is something I can help with right now 😅.\n I can help catch up on the chat messages or answer questions based on the group's knowledge.",
+            "Desculpe, mas acho que não posso ajudar com isso agora 😅.\n Posso ajudar você a se atualizar sobre as mensagens do chat ou responder perguntas com base no conhecimento do grupo.",
             # in_reply_to=message.message_id,
         )

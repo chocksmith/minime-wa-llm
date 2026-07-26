@@ -79,10 +79,10 @@ class WhatsappGroupLinkSpamHandler(BaseHandler):
 
         # Construct message with validated data
         message_to_send = (
-            f"@{message.group.owner_jid.split('@')[0]} - A Whatsapp group link was shared in the group."
-            f"This might be a spam. Please check and remove if it is spam.\n\n"
-            f"Spam Confidence Level: *{spam_result.score}*  (1 not spam - 5 spam) \n"
-            f"Explanation: {spam_result.explanation}"
+            f"@{message.group.owner_jid.split('@')[0]} - Um link de grupo do WhatsApp foi compartilhado no grupo."
+            f"Isso pode ser spam. Por favor, verifique e remova se for spam.\n\n"
+            f"Nível de Confiança de Spam: *{spam_result.score}*  (1 não é spam - 5 é spam) \n"
+            f"Explicação: {spam_result.explanation}"
         )
 
         await self.send_message(

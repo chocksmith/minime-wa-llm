@@ -3,6 +3,7 @@ from typing import List
 
 from pydantic_ai import Agent
 from pydantic_ai.agent import AgentRunResult
+from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from sqlmodel import select, desc
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tenacity import (
@@ -136,6 +137,7 @@ class KnowledgeBaseAnswers(BaseHandler):
         agent = Agent(
             model=self.settings.model_name,
             system_prompt=prompt_manager.render("rag.j2"),
+            tools=[duckduckgo_search_tool(max_results=5)],
         )
 
         sender_user = parse_jid(sender).user

@@ -3,13 +3,31 @@ services:
     extends:
       file: docker-compose.base.yml
       service: postgres
+    restart: always
 
   whatsapp:
     extends:
       file: docker-compose.base.yml
       service: whatsapp
     environment:
-      - WHATSAPP_WEBHOOK=http://web-server:8000/webhook
+      - WHATSAPP_WEBHOOK=http://web-server:8000/webhook,http://realestate-bot:8001/webhook
+
+  realestate-bot:
+    build:
+      context: ../../minime
+      dockerfile: whatsapp-bot/Dockerfile
+    env_file:
+      - ../../minime/whatsapp-bot/.env
+    ports:
+      - "8001:8001"
+    volumes:
+      - realestate_bot_state:/app/data
+    depends_on:
+      - whatsapp
+    environment:
+      - WHATSAPP_HOST=http://whatsapp:3000
+      - AUTHORIZATION_FILE=/app/data/pending_authorizations.json
+    restart: always
 
   web-server:
     build: .
@@ -27,9 +45,12 @@ services:
       - PORT=8000
       - DB_URI=postgresql+asyncpg://user:password@postgres:5432/postgres
       - WHATSAPP_HOST=http://whatsapp:3000
+    restart: always
 
 volumes:
   wa_llm_whatsapp:
     name: wa_llm_whatsapp
   wa_llm_postgres:
     name: wa_llm_postgres
+  realestate_bot_state:
+    name: realestate_bot_state

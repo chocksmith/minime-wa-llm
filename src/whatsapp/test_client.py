@@ -49,6 +49,29 @@ async def test_get_user_info(client: WhatsAppClient, httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
+async def test_get_my_jid(client: WhatsAppClient, httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url="http://test-api/devices",
+        json={
+            "code": "SUCCESS",
+            "message": "List devices",
+            "results": [
+                {
+                    "id": "af3503e1-3132-4b3a-9eb1-e107f2adf71d",
+                    "display_name": "Mini-me",
+                    "state": "logged_in",
+                    "jid": "19403633312@s.whatsapp.net",
+                    "created_at": "2026-07-25T13:58:12.122885835Z",
+                }
+            ],
+        },
+    )
+    my_jid = await client.get_my_jid()
+    assert my_jid.user == "19403633312"
+    assert my_jid.server == "s.whatsapp.net"
+
+
+@pytest.mark.asyncio
 async def test_send_message(client: WhatsAppClient, httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         url="http://test-api/send/message",

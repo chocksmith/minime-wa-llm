@@ -89,7 +89,7 @@ async def test_message_handler_dm_opt_out(
     mock_whatsapp.send_message.assert_called_with(
         SendMessageRequest(
             phone="user@s.whatsapp.net",
-            message="You have been opted out. You will no longer be tagged in summaries and answers.",
+            message="Você optou por sair. Você não será mais marcado em resumos e respostas.",
             reply_message_id=None,
         )
     )
@@ -149,7 +149,7 @@ async def test_message_handler_dm_opt_in(
     mock_whatsapp.send_message.assert_called_with(
         SendMessageRequest(
             phone="user@s.whatsapp.net",
-            message="You have been opted in. You will now be tagged in summaries and answers.",
+            message="Você optou por participar. Você voltará a ser marcado em resumos e respostas.",
             reply_message_id=None,
         )
     )
@@ -202,7 +202,7 @@ async def test_message_handler_dm_status(
     mock_whatsapp.send_message.assert_called_with(
         SendMessageRequest(
             phone="user@s.whatsapp.net",
-            message="You are currently opted in.",
+            message="Você está atualmente participando (opt-in).",
             reply_message_id=None,
         )
     )

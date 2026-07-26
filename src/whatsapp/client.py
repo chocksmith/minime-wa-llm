@@ -16,10 +16,14 @@ class WhatsAppClient(GoWaClient):
         if self._jid:
             return self._jid
 
-        info = await self.get_devices()
+        # GOWA v8 repurposed /app/devices' `device` field to hold the
+        # internal device UUID instead of the WhatsApp JID. The `/devices`
+        # endpoint (list_devices) is v8's multi-device management API and
+        # still exposes the real JID via `.jid`.
+        info = await self.list_devices()
         if not info.results:
             raise ValueError("No devices found")
-        device_jid = info.results[0].device
+        device_jid = info.results[0].jid
         if not device_jid:
             raise ValueError("No primary device JID found")
         self._jid = parse_jid(device_jid)
