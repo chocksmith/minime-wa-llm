@@ -22,6 +22,11 @@ services:
       - "8001:8001"
     volumes:
       - realestate_bot_state:/app/data
+      # Root-equivalent host access, deliberately granted so the admin DM channel
+      # can control this stack's containers. Do NOT mount anything else at
+      # /app/whatsapp-bot - that's the source code path (see the note in
+      # whatsapp-bot/Dockerfile / prior incident this session).
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - whatsapp
     environment:

@@ -9,6 +9,7 @@ import logging
 import logfire
 
 from api import (
+    ask_and_reply_api,
     load_new_kbtopics_api,
     seed_knowledge_api,
     status,
@@ -93,6 +94,7 @@ app.include_router(status.router)
 app.include_router(summarize_and_send_to_group_api.router)
 app.include_router(load_new_kbtopics_api.router)
 app.include_router(seed_knowledge_api.router)
+app.include_router(ask_and_reply_api.router)
 
 if __name__ == "__main__":
     import uvicorn
