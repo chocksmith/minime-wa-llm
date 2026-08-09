@@ -143,6 +143,8 @@ Swagger docs available at: `http://localhost:8000/docs`
 
 ### 7. Operations — Start / Stop / Status
 
+> **Current live deployment:** `172.20.7.121` (SSH as `rodrigo`, repo checked out at `~/LocalProjects/whatsapp_bot/wa_llm`, sibling `minime` checkout at `~/LocalProjects/minime`). Migrated there from a local dev machine on 2026-08-09, carrying over the existing WhatsApp session (no QR re-scan). That box has an unrelated local postgres already bound to `127.0.0.1:5432`, so a `docker-compose.override.yml` (tracked in this repo) remaps this stack's published postgres port to `5433` — internal container-to-container traffic is unaffected either way. If this ever moves again, update this note.
+
 All commands run from the repo root (where `docker-compose.yml` lives).
 
 ```bash
