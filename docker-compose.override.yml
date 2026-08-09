@@ -1,0 +1,11 @@
+# Auto-loaded by `docker compose` alongside docker-compose.yml. Remaps
+# postgres's published host port to 5433: the 172.20.7.121 deployment box
+# already has an unrelated local postgres bound to 127.0.0.1:5432. Harmless
+# on any other host too - sibling containers always reach it internally via
+# the unpublished default (postgres:5432); this only affects host-level
+# access. `!override` forces a replace instead of Compose's default behavior
+# of concatenating `ports` lists across files.
+services:
+  postgres:
+    ports: !override
+      - "5433:5432"
