@@ -42,6 +42,10 @@ class Settings(BaseSettings):
         "Hello, I am not designed to answer to personal messages."
     )
 
+    # User JIDs whose DMs this app ignores entirely (e.g. the admin, whose DMs
+    # are handled by realestate-bot on the same WhatsApp session)
+    ignored_dm_jids: list[str] = []
+
     # QA tester settings (user JIDs allowed to use /kb_qa command)
     qa_testers: list[str] = []
 
@@ -53,7 +57,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     logfire_token: str
 
-    @field_validator("qa_testers")
+    @field_validator("qa_testers", "ignored_dm_jids")
     @classmethod
     def validate_qa_testers(cls, v: list[str]) -> list[str]:
         """Validate that qa_testers contains valid user JIDs."""

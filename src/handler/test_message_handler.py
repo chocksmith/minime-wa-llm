@@ -28,7 +28,12 @@ def mock_embedding_client():
 
 @pytest.fixture
 def mock_settings():
-    return Mock(spec=Settings, model_name="test-model", dm_autoreply_enabled=False)
+    return Mock(
+        spec=Settings,
+        model_name="test-model",
+        dm_autoreply_enabled=False,
+        ignored_dm_jids=[],
+    )
 
 
 @pytest.mark.asyncio
@@ -206,3 +211,44 @@ async def test_message_handler_dm_status(
             reply_message_id=None,
         )
     )
+
+
+@pytest.mark.asyncio
+async def test_message_handler_dm_from_ignored_jid(
+    mock_session: AsyncSessionMock,
+    mock_whatsapp: AsyncMock,
+    mock_embedding_client: AsyncMock,
+    mock_settings: Mock,
+):
+    mock_settings.ignored_dm_jids = ["admin@s.whatsapp.net"]
+    handler = MessageHandler(
+        mock_session, mock_whatsapp, mock_embedding_client, mock_settings
+    )
+
+    test_message = Message(
+        message_id="1",
+        chat_jid="admin@s.whatsapp.net",
+        sender_jid="admin@s.whatsapp.net",
+        text="status",
+        timestamp=datetime.now(timezone.utc),
+    )
+    handler.store_message = AsyncMock(return_value=test_message)
+
+    payload = WebhookEnvelope.model_validate(
+        {
+            "event": "message",
+            "payload": {
+                "id": "msg_ignored",
+                "chat_id": "admin@s.whatsapp.net",
+                "from": "admin@s.whatsapp.net",
+                "from_name": "Admin",
+                "timestamp": datetime.now(timezone.utc),
+                "body": "status",
+            },
+        }
+    )
+
+    await handler(payload)
+
+    # Another bot answers this sender's DMs; this one must stay silent
+    mock_whatsapp.send_message.assert_not_called()

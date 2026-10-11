@@ -58,6 +58,8 @@ class MessageHandler(BaseHandler):
 
         # direct message
         if message and not message.group:
+            if message.sender_jid in self.settings.ignored_dm_jids:
+                return
             command = message.text.strip().lower()
             if command == "opt-out":
                 await self.handle_opt_out(message)

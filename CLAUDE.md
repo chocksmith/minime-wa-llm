@@ -11,6 +11,20 @@ development only — never run them on the live host alongside minime's
 stack (same `whatsapp` container_name and volumes). Deployment notes live
 in minime's README ("Running it").
 
+## Persona and `CONSTITUTION.md`
+
+`src/templates/CONSTITUTION.md` defines who the bot is and what it may or
+may not say. It's included at the top of `persona.j2`, so it reaches every
+answer prompt that includes the persona (`rag.j2`, `summarize.j2`). `src/` is
+bind-mounted and Jinja auto-reloads templates, so edits go live on the next
+message without a restart.
+
+## `IGNORED_DM_JIDS`
+
+DMs from these JIDs are dropped (no opt-out/status replies, no autoreply).
+Set to the admin's number: realestate-bot owns the admin's DMs on the shared
+WhatsApp session, and without this both bots answered `status`.
+
 ## The WhatsApp session volume is precious
 
 `wa_llm_whatsapp` (mounted at `/app/storages` in the `whatsapp` container)
