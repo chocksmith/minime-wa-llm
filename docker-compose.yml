@@ -28,6 +28,7 @@ services:
       # whatsapp-bot/Dockerfile / prior incident this session).
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/rodrigo/LocalProjects/dropbox/logs:/app/dropbox_logs:ro
+      - /home/rodrigo/LocalProjects/dropbox/dropbox-mirror:/app/dropbox_mirror:ro
     depends_on:
       - whatsapp
     environment:
