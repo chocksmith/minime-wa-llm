@@ -3,12 +3,13 @@
 This is a personal fork (`origin` = `chocksmith/minime-wa-llm`) of
 `ilanbenb/wa_llm` (`upstream`). Push to `origin`, not `upstream`.
 
-`docker-compose.yml` here orchestrates the **whole personal stack**, not
-just this app: `postgres`, `whatsapp` (GOWA), `web-server` (this app), and
-`realestate-bot` (built from the sibling `minime` repo — see its
-`CLAUDE.md` for that side of the relationship). Current live deployment
-host and layout: see the note at the top of README.md's "Operations"
-section (§7) — keep it updated if the deployment ever moves.
+This repo is vendored as a git submodule at `vendor/wa_llm` inside the
+`minime` repo, whose root `docker-compose.yml` runs the **live personal
+stack** (`postgres`, `whatsapp`/GOWA, `web-server` = this app,
+`realestate-bot`). The `docker-compose*.yml` files here are for standalone
+development only — never run them on the live host alongside minime's
+stack (same `whatsapp` container_name and volumes). Deployment notes live
+in minime's README ("Running it").
 
 ## The WhatsApp session volume is precious
 
@@ -21,20 +22,10 @@ and `realestate-bot` both do, via `WHATSAPP_WEBHOOK` fan-out — see
 volume (and `wa_llm_postgres`, which also holds GOWA's own device-pairing
 state) byte-for-byte rather than starting fresh.
 
-## Never mount anything at `/app/whatsapp-bot`
-
-That's the `realestate-bot` service's source-code path inside the
-container. A named volume mounted there once silently froze the running
-code to whatever was in the image the first time the volume was
-populated — Docker only auto-populates a named volume from the image on
-first use, so every later rebuild appeared to succeed while the container
-kept running stale code. State for that service belongs under
-`/app/data` instead (see `realestate_bot_state` volume in
-`docker-compose.yml`).
-
 ## `docker-compose.override.yml`
 
-Tracked in this repo, auto-loaded by `docker compose`. Currently remaps
+Tracked in this repo, auto-loaded by `docker compose` (standalone use only;
+minime's compose file sets the 5433 mapping itself). Currently remaps
 postgres's *published* port to `5433` because the current deployment host
 has an unrelated local postgres already bound to `127.0.0.1:5432`.
 Internal container-to-container traffic is unaffected either way (still

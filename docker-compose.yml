@@ -1,3 +1,6 @@
+# Standalone wa_llm stack (dev). The live personal stack, including
+# realestate-bot, runs from the parent minime repo's docker-compose.yml -
+# don't run both at once (same container_name and volumes).
 services:
   postgres:
     extends:
@@ -10,31 +13,7 @@ services:
       file: docker-compose.base.yml
       service: whatsapp
     environment:
-      - WHATSAPP_WEBHOOK=http://web-server:8000/webhook,http://realestate-bot:8001/webhook
-
-  realestate-bot:
-    build:
-      context: ../../minime
-      dockerfile: whatsapp-bot/Dockerfile
-    env_file:
-      - ../../minime/whatsapp-bot/.env
-    ports:
-      - "8001:8001"
-    volumes:
-      - realestate_bot_state:/app/data
-      # Root-equivalent host access, deliberately granted so the admin DM channel
-      # can control this stack's containers. Do NOT mount anything else at
-      # /app/whatsapp-bot - that's the source code path (see the note in
-      # whatsapp-bot/Dockerfile / prior incident this session).
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /home/rodrigo/LocalProjects/dropbox/logs:/app/dropbox_logs:ro
-      - /home/rodrigo/LocalProjects/dropbox/dropbox-mirror:/app/dropbox_mirror:ro
-    depends_on:
-      - whatsapp
-    environment:
-      - WHATSAPP_HOST=http://whatsapp:3000
-      - AUTHORIZATION_FILE=/app/data/pending_authorizations.json
-    restart: always
+      - WHATSAPP_WEBHOOK=http://web-server:8000/webhook
 
   web-server:
     build: .
@@ -59,5 +38,3 @@ volumes:
     name: wa_llm_whatsapp
   wa_llm_postgres:
     name: wa_llm_postgres
-  realestate_bot_state:
-    name: realestate_bot_state
